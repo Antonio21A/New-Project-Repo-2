@@ -13,10 +13,20 @@
           style="max-width: 260px;"
           placeholder="Search name / department…"
         />
+        <button
+          class="btn btn-outline-secondary"
+          @click="employeeStore.fetchEmployees()"
+          :disabled="employeeStore.loading"
+        >
+          {{ employeeStore.loading ? 'Loading…' : 'Refresh' }}
+        </button>
       </div>
     </div>
 
-    <!-- Add Employee -->
+    <div v-if="employeeStore.error" class="alert alert-danger">
+      {{ employeeStore.error }}
+    </div>
+
     <div class="card bank-card mb-3">
       <div class="card-body">
         <h5 class="mb-3">Add Employee</h5>
@@ -32,16 +42,17 @@
             <input v-model="newEmployee.department" type="text" class="form-control" placeholder="Department">
           </div>
           <div class="col-md-2">
-            <input v-model.number="newEmployee.salary" type="number" class="form-control" placeholder="Salary">
+            <input v-model.number="newEmployee.salary" type="number" class="form-control" placeholder="Salary (ZAR)">
           </div>
           <div class="col-md-3 d-grid">
-            <button class="btn bank-primary" @click="addEmployee">Add Employee</button>
+            <button class="btn bank-primary" @click="addEmployee" :disabled="employeeStore.loading">
+              {{ employeeStore.loading ? 'Saving…' : 'Add Employee' }}
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Table -->
     <div class="card bank-card">
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -63,7 +74,7 @@
             </thead>
 
             <tbody>
-              <tr v-for="emp in filteredEmployees" :key="emp.employeeId">
+              <tr v-for="emp in filteredEmployees" :key="emp.employeeId ?? emp.employee_id">
                 <td class="fw-semibold">{{ emp.name }}</td>
                 <td>{{ emp.position }}</td>
                 <td>{{ emp.department }}</td>
@@ -72,14 +83,14 @@
                 <td class="text-end">
                   <router-link
                     class="btn btn-sm btn-outline-secondary"
-                    :to="`/employees/${emp.employeeId}`"
+                    :to="`/employees/${emp.employeeId ?? emp.employee_id}`"
                   >
                     View
                   </router-link>
                 </td>
               </tr>
 
-              <tr v-if="filteredEmployees.length === 0">
+              <tr v-if="!employeeStore.loading && filteredEmployees.length === 0">
                 <td colspan="6" class="text-muted py-4 text-center">No results.</td>
               </tr>
             </tbody>
@@ -92,16 +103,14 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useEmployeeStore } from '../stores/employeeStore'
 
 const employeeStore = useEmployeeStore()
-const employees = employeeStore.employees
 
 const search = ref('')
 
 const newEmployee = ref({
-  employeeId: 0,
   name: '',
   position: '',
   department: '',
@@ -110,22 +119,15 @@ const newEmployee = ref({
   employmentHistory: ''
 })
 
-const nextId = computed(() => {
-  const ids = employees.map(e => Number(e.employeeId) || 0)
-  return (ids.length ? Math.max(...ids) : 0) + 1
-})
-
-const addEmployee = () => {
+const addEmployee = async () => {
   if (!newEmployee.value.name?.trim()) {
     alert('Please enter a name')
     return
   }
 
-  newEmployee.value.employeeId = nextId.value
-  employeeStore.addEmployee({ ...newEmployee.value })
+  await employeeStore.addEmployee({ ...newEmployee.value })
 
   Object.assign(newEmployee.value, {
-    employeeId: 0,
     name: '',
     position: '',
     department: '',
@@ -136,8 +138,10 @@ const addEmployee = () => {
 }
 
 const filteredEmployees = computed(() => {
+  const employees = employeeStore.employees
   const q = search.value.trim().toLowerCase()
   if (!q) return employees
+
   return employees.filter(e =>
     (e.name || '').toLowerCase().includes(q) ||
     (e.department || '').toLowerCase().includes(q) ||
@@ -145,7 +149,12 @@ const filteredEmployees = computed(() => {
   )
 })
 
-const money = (n) => Number(n || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })
+const money = (n) =>
+  Number(n || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
+
+onMounted(() => {
+  employeeStore.fetchEmployees()
+})
 </script>
 
 <style scoped>

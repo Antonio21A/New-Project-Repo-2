@@ -11,14 +11,22 @@
       </router-link>
     </div>
 
-    <div v-if="!employee" class="card bank-card">
+    <div v-if="employeeStore.error" class="alert alert-danger">
+      {{ employeeStore.error }}
+    </div>
+
+    <div v-if="employeeStore.loading" class="text-muted mb-3">
+      Loading employee…
+    </div>
+
+    <div v-if="!employee && !employeeStore.loading" class="card bank-card">
       <div class="card-body">
         <h5 class="mb-1">Employee not found</h5>
         <p class="text-muted mb-0">This ID doesn’t match any employee in your dataset.</p>
       </div>
     </div>
 
-    <div v-else class="row g-3">
+    <div v-else-if="employee" class="row g-3">
       <div class="col-12 col-lg-4">
         <div class="card bank-card h-100">
           <div class="card-body">
@@ -27,12 +35,14 @@
             </div>
 
             <h4 class="mb-1">{{ employee.name }}</h4>
-            <div class="text-muted">{{ employee.position }} • {{ employee.department }}</div>
+            <div class="text-muted">
+              {{ employee.position || '—' }} • {{ employee.department || '—' }}
+            </div>
 
             <hr class="my-3"/>
 
             <div class="small text-muted">Employee ID</div>
-            <div class="fw-semibold mb-2">{{ employee.employeeId }}</div>
+            <div class="fw-semibold mb-2">{{ employeeId }}</div>
 
             <div class="small text-muted">Contact</div>
             <div class="fw-semibold">{{ employee.contact || '—' }}</div>
@@ -60,7 +70,9 @@
               </div>
               <div class="col-md-6">
                 <div class="text-muted small">History / Notes</div>
-                <div class="fw-semibold">{{ employee.employmentHistory || '—' }}</div>
+                <div class="fw-semibold">
+                  {{ employee.employmentHistory || employee.employment_history || '—' }}
+                </div>
               </div>
             </div>
 
@@ -85,26 +97,41 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useEmployeeStore } from '../stores/employeeStore'
 
 const route = useRoute()
 const employeeStore = useEmployeeStore()
 
+const routeId = computed(() => Number(route.params.id))
+
 const employee = computed(() => {
-  const id = Number(route.params.id)
-  return employeeStore.getEmployeeById(id)
+  return employeeStore.getEmployeeById(routeId.value) || employeeStore.selectedEmployee
 })
 
-const money = (n) => Number(n || 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' })
+const employeeId = computed(() => {
+  if (!employee.value) return '—'
+  return employee.value.employeeId ?? employee.value.employee_id ?? '—'
+})
+
+const money = (n) =>
+  Number(n || 0).toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })
 
 const initials = (name = '') => {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
   const first = parts[0]?.[0] || ''
   const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
   return (first + last).toUpperCase()
 }
+
+onMounted(async () => {
+  if (employeeStore.employees.length === 0) {
+    await employeeStore.fetchEmployees()
+  }
+
+  await employeeStore.fetchEmployee(routeId.value)
+})
 </script>
 
 <style scoped>

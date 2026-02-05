@@ -30,6 +30,14 @@
               <router-link class="nav-link bank-link" to="/payroll">Payroll</router-link>
             </li>
 
+            <!-- Optional user badge (safe even if user is null) -->
+            <li class="nav-item d-none d-lg-flex align-items-center ms-lg-2">
+              <span class="bank-userbadge">
+                {{ authStore.user?.username || 'HR User' }}
+                <span v-if="authStore.user?.role" class="opacity-75">• {{ authStore.user.role }}</span>
+              </span>
+            </li>
+
             <li class="nav-item ms-lg-2">
               <button class="btn btn-sm bank-logout" @click="doLogout">
                 Logout
@@ -55,7 +63,7 @@ const authStore = useAuthStore()
 
 const doLogout = () => {
   authStore.logout()
-  router.push('/login')
+  router.replace('/login')
 }
 </script>
 
@@ -114,6 +122,16 @@ body{
 }
 .bank-logout:hover{
   background: rgba(255,255,255,.18);
+}
+
+.bank-userbadge{
+  color: rgba(255,255,255,.92);
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.08);
+  padding: .35rem .65rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  white-space: nowrap;
 }
 
 .bank-card{
