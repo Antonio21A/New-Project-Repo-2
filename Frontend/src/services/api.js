@@ -1,15 +1,17 @@
 import axios from 'axios'
 
 const API = axios.create({
-  baseURL: 'http://localhost:3000/api', 
-  withCredentials: true,             
+  baseURL: 'http://localhost:3000/api',
+  withCredentials: true,
 })
 
 export default {
+  // ---------------- AUTH ----------------
   login(credentials) {
     return API.post('/auth/login', credentials)
   },
 
+  // ---------------- EMPLOYEES ----------------
   getEmployees() {
     return API.get('/employees')
   },
@@ -22,6 +24,17 @@ export default {
     return API.post('/employees', data)
   },
 
+  // ✅ NEW
+  updateEmployee(id, data) {
+    return API.put(`/employees/${id}`, data)
+  },
+
+  // ✅ NEW
+  deleteEmployee(id) {
+    return API.delete(`/employees/${id}`)
+  },
+
+  // ---------------- ATTENDANCE ----------------
   getAttendance() {
     return API.get('/attendance')
   },
@@ -38,6 +51,7 @@ export default {
     return API.patch(`/leave/${leaveId}/deny`, { employeeId })
   },
 
+  // ---------------- PAYROLL ----------------
   getPayroll() {
     return API.get('/payroll')
   }
