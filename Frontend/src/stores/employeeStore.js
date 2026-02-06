@@ -131,3 +131,20 @@ export const useEmployeeStore = defineStore('employee', () => {
     deleteEmployee
   }
 })
+
+state: () => ({
+  employees: [],
+  selectedEmployee: null,
+  loading: false,
+  error: null
+})
+
+getEmployeeById: (state) => (id) => {
+  return state.employees.find(e =>
+    (e.employeeId ?? e.employee_id) === id
+  )
+}
+
+
+
+
